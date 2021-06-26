@@ -9,18 +9,18 @@ module.exports = {
       resolve: "gatsby-theme-hello-friend-ng",
       options: {
         menuLinks: [
-          {
-            name: "About",
-            link: "/about",
-          },
+          // {
+          //   name: "About",
+          //   link: "/about",
+          // },
           {
             name: "Blog",
             link: "/blog",
           },
-          {
-            name: "Projects",
-            link: "/projects",
-          }
+          // {
+          //   name: "Projects",
+          //   link: "/projects",
+          // }
         ],
       },
     },

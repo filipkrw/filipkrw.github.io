@@ -1,8 +1,10 @@
 module.exports = {
   siteMetadata: {
-    title: "filipkrw",
+    title: "Filip Krawczyk",
+    titleTemplate: "%s – Filip Krawczyk"
   },
   plugins: [
+    "gatsby-plugin-styled-components",
     {
       resolve: "gatsby-theme-hello-friend-ng",
       options: {

@@ -1,0 +1,226 @@
+---
+title: Creating pages from multiple MDX files in Gatsby
+published_at: 2021-06-27
+tags:
+  - gatsby
+---
+
+Recently I saw a Reddit post asking how to create more complex blog posts in Gatsby with the use of MDX, with over 300 likes, but no good answers. Without diving into the MDX implementation, remark plugins and syntax trees, the easiest way to achieve that seems to be to generate pages from multiple MDX files.
+
+It's pretty straightforward to do if you already know the inner workings of Gatsby, but for the less experienced it might be a daunting task. To keep the code as clear as possisble, I won't use TypeScript. But you should.
+
+You can find the final code [here](https://github.com/filipkrw/gatsby-complex-mdx-pages-tutorial). If you have any questions or weird bugs, you can contact me on Twitter [@filipkrw](https://twitter.com/filipkrw).
+
+Right, let's get to it then.
+
+## File structure
+
+We'll put our pages in `src/complex-pages` directory. Every directory in that location with a file in it will be transformed into a page. For example, with this file structure:
+
+<CodeHighlight>
+  {`src/
+├─ complex-pages/
+│  ├─ content.mdx
+│  ├─ about/
+│  │  ├─ aside.mdx
+│  │  ├─ content.mdx
+│  │  ├─ filip/
+│  │  │  ├─ aside.mdx
+│  │  │  ├─ content.mdx
+│  │  ├─ zuzanna/
+│  │  │  ├─ aside.mdx
+│  │  │  ├─ content.mdx`}
+</CodeHighlight>
+
+Four pages will be produced: `/` (index page), `/about`, `/about/filip`, and `/about/zuzanna`. All except the index page, will be composed of two `mdx` files: `content.mdx` and `aside.mdx`. You can check it out live [here](https://filipkrw.github.io/gatsby-complex-mdx-pages-tutorial/).
+
+## Set-up
+
+First, we need to install `gatsby-source-filesystem` and `gatsby-plugin-mdx`:
+
+<CodeHighlight>{`npm install gatsby-source-filesystem gatsby-plugin-mdx`}</CodeHighlight>
+
+And add them as plugins to `gatsby-config.js`:
+
+<CodeHighlight language="javascript">
+  {`// gatsby-config.js
+module.exports = {
+  plugins: [
+    {
+      resolve: \`gatsby-source-filesystem\`,
+      options: {
+        name: \`complexPage\`,
+        path: \`\${__dirname}/src/complex-pages\`,
+      },
+    },
+    \`gatsby-plugin-mdx\`,
+  ],
+}`}
+</CodeHighlight>
+
+`gatsby-source-filesystem` will grab every `mdx` file in `src/complex-pages`, attach the `complexPage` name to them (useful later), and transform them into GraphQL nodes.
+
+`gatsby-plugin-mdx` will transform the content of those `mdx` files into React components and append them to those GraphQL nodes.
+
+## Creating pages
+
+Every `mdx` file path (relative to `src/complex-pages`) can be divided into two parts: directory path and filename. For example, for `/about/zuzanna/aside.mdx`, the directory path will be `/about/zuzanna` and the filename, obviously, is `aside.mdx`. We'll use the directory path as the page path, and the filename (without the `mdx` extension) as a section name.
+
+To do that, we'll use the [`onCreateNode` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#onCreateNode), which makes it possible to add custom fields to GraphQL nodes.
+
+<CodeHighlight language="javascript">
+  {`// gatsby-node.js
+const { createFilePath } = require(\`gatsby-source-filesystem\`)
+const path = require(\`path\`)
+ 
+exports.onCreateNode = ({ node, actions, getNode }) => {
+  const { createNodeField } = actions
+   
+  if (node.sourceInstanceName === "complexPage") {
+    const filePath = createFilePath({ node, getNode, trailingSlash: false })
+    const pagePath = path.dirname(filePath)
+    const sectionName = path.basename(filePath)
+     
+    createNodeField({
+      name: \`pagePath\`,
+      value: pagePath,
+      node,
+    })
+     
+    createNodeField({
+      name: \`sectionName\`,
+      value: sectionName,
+      node,
+    })
+  }
+}`}
+</CodeHighlight>
+
+Here, for every `complexPage` file, we get its path (by using `gatsby-source-filesystem`'s `createFilePath`), divide it to the page path and section name, and add them as new node fields.
+
+With those fields set-up, we can finally create the pages. For that we'll use the [`createPages` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#createPages).
+
+<CodeHighlight language="javascript">
+  {`// gatsby-node.js
+exports.createPages = async ({ actions, graphql, reporter }) => {
+  const sections = await graphql(\`
+    query {
+      allFile(filter: { sourceInstanceName: { eq: "complexPage" } }) {
+        nodes {
+          fields {
+            pagePath
+          }
+        }
+      }
+    }
+  \`)
+   
+  // Get paths and filter out duplicates
+  const pagePaths = sections.data.allFile.nodes
+    .map((node) => node.fields.pagePath)
+    .filter((value, index, self) => self.indexOf(value) === index)
+     
+  pagePaths.forEach((pagePath) => {
+    actions.createPage({
+      path: pagePath,
+      component: require.resolve("./src/components/complex-page.js"),
+      context: { pagePath },
+    })
+  })
+}`}
+</CodeHighlight>
+
+First, we query for all nodes created from `complexPage` files, then we get their page paths, filter out duplicates, and finally, create the pages with the help of the `createPage` action, to which we pass an object with the page path, the component which will render the page, and the context object – in our case, containing the page path. It'll come in handy in the next section.
+
+## Render
+
+All that's left now, is to grab all the sections in the component specified in the `createPage` action above, and render them. We're using the page path from the page context to query for all sections of a particular page.
+
+<CodeHighlight language="javascript">
+  {`// src/components/complex-page.js
+export const query = graphql\`
+  query($pagePath: String!) {
+    allFile(filter: { fields: { pagePath: { eq: $pagePath } } }) {
+      nodes {
+        fields {
+          sectionName
+        }
+        childMdx {
+          frontmatter {
+            title
+          }
+          body
+        }
+      }
+    }
+  }
+\``}
+</CodeHighlight>
+
+In the component itself, we can map section content to the section name, and render accordingly with the use of `gatsby-plugin-mdx`'s `MDXRenderer` component.
+
+<CodeHighlight language="jsx">
+  {`// src/components/complex-page.js
+export default function ComplexPage({ data }) {
+  const { content, aside } = data.allFile.nodes.reduce((result, node) => {
+    result[node.fields.sectionName] = node.childMdx
+    return result
+  }, {})
+   
+  return (
+    <Layout>
+      {content && (
+        <Main>
+          <Title>{content.frontmatter.title}</Title>
+          <MDXRenderer>{content.body}</MDXRenderer>
+        </Main>
+      )}
+      {aside && (
+        <Aside>
+          <MDXRenderer>{aside.body}</MDXRenderer>
+        </Aside>
+      )}
+    </Layout>
+  )
+}`}
+</CodeHighlight>
+
+That's it! We can now easily create pages with multiple `mdx` files.
+
+## Final touches
+
+There a couple more things you can do to make the code more resilient. For example, if the `src/complex-pages` directory doesn't exist, `gatsby-source-filesystem` will throw an error and Gatsby won't run. We can aid that by checking if the directory exists, and if not, create it automatically in the [`onPreBootstrap` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#onPreBootstrap).
+
+<CodeHighlight language="javascript">
+  {`// gatsby-node.js
+const fs = require(\`fs\`)
+ 
+exports.onPreBootstrap = () => {
+  const dir = \`src/complex-pages\`
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir)
+  }
+}`}
+</CodeHighlight>
+
+Similarly, if there are no files in the directory, GraphQL will complain about not being able to locate the `fields` and `childMdx` fields in the nodes created by `gatsby-source-filesystem`, which we are trying to query in the page component. We can fix this by defining those fields using the [`createSchemaCustomization` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#createSchemaCustomization):
+
+<CodeHighlight language="javascript">
+  {`// gatsby-node.js
+exports.createSchemaCustomization = ({ actions }) => {
+  const { createTypes } = actions
+  const typeDefs = \`
+    type File {
+      childMdx: Mdx
+      fields: Fields
+    }
+    type Fields {
+      pagePath: String
+      sectionName: String
+    }
+  \`
+  createTypes(typeDefs)
+}`}
+</CodeHighlight>
+
+Now that's actually it.

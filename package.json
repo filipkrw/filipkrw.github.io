@@ -14,7 +14,8 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "restart": "gatsby clean && gatsby develop",
-    "deploy": "gatsby build && gh-pages -d public"
+    "deploy": "gatsby build && npm run cname && gh-pages -d public",
+    "cname": "echo 'filipkrw.io' > ./public/CNAME"
   },
   "dependencies": {
     "babel-plugin-styled-components": "^1.12.0",

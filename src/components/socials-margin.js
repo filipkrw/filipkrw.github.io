@@ -3,7 +3,7 @@ import Socials from 'gatsby-theme-hello-friend-ng/src/components/partials/social
 import styled from 'styled-components'
 
 const MarginTop = styled.div`
-	margin: 42px 0;
+	margin: 36px 0;
 `
 
 export default function SocialsMargin(props) {

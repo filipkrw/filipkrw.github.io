@@ -1,5 +1,5 @@
 ---
-title: Creating pages from multiple MDX files in Gatsby
+title: How to create pages from multiple MDX files in Gatsby
 published_at: 2021-06-27
 tags:
   - gatsby
@@ -7,13 +7,13 @@ image: complex-mdx-pages-in-gatsby.png
 description: Learn how to create complex pages in Gatsby, composed of multiple MDX files
 ---
 
-Recently I saw a Reddit post asking how to create more complex blog posts in Gatsby with the use of MDX, with over 300 likes, but no good answers. Without diving into the MDX implementation, remark plugins and syntax trees, the easiest way to achieve that seems to be to generate pages from multiple MDX files.
+Recently I saw a Reddit post asking how to create more complex blog posts in Gatsby with the use of MDX, which had 300 points and no good answers. I began exploring MDX, and soon realised that it's a rabbit hole with things like remark plugins and syntax trees in it, and writing a plugin which would allow to split MDX files into sections, would be an overkill. Instead, we can write some simple code to create pages from multiple MDX files. Some may even argue that separating page sections into different files is a cleaner solution.
 
-It's pretty straightforward to do if you already know the inner workings of Gatsby, but for the less experienced it might be a daunting task. To keep the code as clear as possisble, I won't use TypeScript. But you should.
+It's pretty straightforward to do if you already know the inner workings of Gatsby, but for the less experienced it might be a daunting task. To keep the code as clear as possible, I didn't use TypeScript, and let me tell you – it was a terrible experience. If you're not using TypeScript yet, I highly recommend trying it. [It's like writing super low-level test for your code.](https://twitter.com/filipkrw/status/1410343359600807937)
 
-You can find the final code [here](https://github.com/filipkrw/gatsby-complex-mdx-pages-tutorial). If you have any questions or weird bugs, you can contact me on Twitter [@filipkrw](https://twitter.com/filipkrw).
+You can see the final code [here](https://github.com/filipkrw/gatsby-complex-mdx-pages-tutorial) and interact with it [here](https://filipkrw.github.io/gatsby-complex-mdx-pages-tutorial/). If you have any questions or problems, you can talk to me on Twitter [@filipkrw](https://twitter.com/filipkrw).
 
-Right, let's get to it then.
+Right, let's get to it.
 
 ## File structure
 
@@ -34,7 +34,7 @@ We'll put our pages in `src/complex-pages` directory. Every directory in that lo
 │  │  │  ├─ content.mdx`}
 </CodeHighlight>
 
-Four pages will be produced: `/` (index page), `/about`, `/about/filip`, and `/about/zuzanna`. All except the index page, will be composed of two `mdx` files: `content.mdx` and `aside.mdx`. You can check it out live [here](https://filipkrw.github.io/gatsby-complex-mdx-pages-tutorial/).
+Four pages will be produced: `/` (index page), `/about`, `/about/filip`, and `/about/zuzanna`. All except the index page, will be composed of two `mdx` files: `content.mdx` and `aside.mdx`.
 
 ## Set-up
 
@@ -66,7 +66,7 @@ module.exports = {
 
 ## Creating pages
 
-Every `mdx` file path (relative to `src/complex-pages`) can be divided into two parts: directory path and filename. For example, for `/about/zuzanna/aside.mdx`, the directory path will be `/about/zuzanna` and the filename, obviously, is `aside.mdx`. We'll use the directory path as the page path, and the filename (without the `mdx` extension) as a section name.
+Every `mdx` file path (relative to `src/complex-pages`) can be divided into two parts: directory path and filename. For example, for `/about/zuzanna/aside.mdx`, the directory path is `/about/zuzanna` and the filename, obviously, is `aside.mdx`. We'll use the directory path as the page path, and the filename (without the `mdx` extension) as a section name.
 
 To do that, we'll use the [`onCreateNode` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#onCreateNode), which makes it possible to add custom fields to GraphQL nodes.
 
@@ -98,7 +98,7 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
 }`}
 </CodeHighlight>
 
-Here, for every `complexPage` file, we get its path (by using `gatsby-source-filesystem`'s `createFilePath`), divide it to the page path and section name, and add them as new node fields.
+Here, for every `complexPage` node, we get its path (with the help of [`gatsby-source-filesystem`'s `createFilePath`](https://www.gatsbyjs.com/plugins/gatsby-source-filesystem/#createfilepath)), divide it into the page path and the section name, and add them as new node fields.
 
 With those fields set-up, we can finally create the pages. For that we'll use the [`createPages` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#createPages).
 
@@ -132,9 +132,9 @@ exports.createPages = async ({ actions, graphql, reporter }) => {
 }`}
 </CodeHighlight>
 
-First, we query for all nodes created from `complexPage` files, then we get their page paths, filter out duplicates, and finally, create the pages with the help of the `createPage` action, to which we pass an object with the page path, the component which will render the page, and the context object – in our case, containing the page path. It'll come in handy in the next section.
+First, we query for all `complexPage` nodes, then we get their page paths, filter out duplicates, and finally, create the pages with the help of the `createPage` action, to which we pass an object with the page path, the component which will render the page, and the context object – in our case, containing the page path. It'll come in handy in the next section.
 
-## Render
+## Rendering
 
 All that's left now, is to grab all the sections in the component specified in the `createPage` action above, and render them. We're using the page path from the page context to query for all sections of a particular page.
 
@@ -191,7 +191,7 @@ That's it! We can now easily create pages with multiple `mdx` files.
 
 ## Final touches
 
-There a couple more things you can do to make the code more resilient. For example, if the `src/complex-pages` directory doesn't exist, `gatsby-source-filesystem` will throw an error and Gatsby won't run. We can aid that by checking if the directory exists, and if not, create it automatically in the [`onPreBootstrap` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#onPreBootstrap).
+There a couple more things you can do to make the code more resilient. For example, if the `src/complex-pages` directory doesn't exist, `gatsby-source-filesystem` will throw an error, preventing Gatsby from running. We can aid that by creating the directory automatically if it doesn't exist in the [`onPreBootstrap` hook](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/#onPreBootstrap).
 
 <CodeHighlight language="javascript">
   {`// gatsby-node.js
@@ -225,4 +225,4 @@ exports.createSchemaCustomization = ({ actions }) => {
 }`}
 </CodeHighlight>
 
-Now that's actually it.
+Now, the code **should** run no matter what (although I can't say I tested it very thouroughly), which is useful if you want to use it in a theme, or perhaps you don't like leaving anything behind you unchecked, like a certain mercenary with a massive double-handed axe.

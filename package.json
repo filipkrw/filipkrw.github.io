@@ -13,7 +13,7 @@
     "build": "gatsby build",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
-    "restart": "gatsby clean && gatsby develop",
+    "reset": "gatsby clean && gatsby develop",
     "deploy": "gatsby build && npm run cname && gh-pages -d public",
     "cname": "echo filipkrw.io > ./public/CNAME"
   },

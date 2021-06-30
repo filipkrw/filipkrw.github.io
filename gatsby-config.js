@@ -12,6 +12,12 @@ module.exports = {
     {
       resolve: "gatsby-theme-hello-friend-ng",
       options: {
+        blog: {
+          title: "Blog",
+          description: "I'm Filip Krawczyk and I write about coding",
+          image: "",
+          path: "blog",
+        },
         menuLinks: [
           // {
           //   name: "About",

@@ -7,13 +7,9 @@ image: complex-mdx-pages-in-gatsby.png
 description: Learn how to create complex pages in Gatsby, composed of multiple MDX files
 ---
 
-Recently I saw a Reddit post asking how to create more complex blog posts in Gatsby with the use of MDX, which had 300 points and no good answers. I began exploring MDX, and soon realised that it's a rabbit hole with things like remark plugins and syntax trees in it, and writing a plugin which would allow to split MDX files into sections, would be an overkill. Instead, we can write some simple code to create pages from multiple MDX files. Some may even argue that separating page sections into different files is a cleaner solution.
-
-It's pretty straightforward to do if you already know the inner workings of Gatsby, but for the less experienced it might be a daunting task. To keep the code as clear as possible, I didn't use TypeScript, and let me tell you – it was a terrible experience. If you're not using TypeScript yet, I highly recommend trying it. [It's like writing super low-level test for your code.](https://twitter.com/filipkrw/status/1410343359600807937)
+Recently I saw a Reddit post asking how to create more complex blog posts in Gatsby with the use of MDX, which had 300 points and no good answers. I began exploring MDX, and soon realised that it's a rabbit hole with things like remark plugins and syntax trees in it, and writing a plugin which would allow to split MDX files into sections, would be an overkill. Instead, we can write some simple code to create pages from multiple MDX files.
 
 You can see the final code [here](https://github.com/filipkrw/gatsby-complex-mdx-pages-tutorial) and interact with it [here](https://filipkrw.github.io/gatsby-complex-mdx-pages-tutorial/). If you have any questions or problems, you can talk to me on Twitter [@filipkrw](https://twitter.com/filipkrw).
-
-Right, let's get to it.
 
 ## File structure
 
@@ -225,4 +221,4 @@ exports.createSchemaCustomization = ({ actions }) => {
 }`}
 </CodeHighlight>
 
-Now, the code **should** run no matter what (although I can't say I tested it very thouroughly), which is useful if you want to use it in a theme, or perhaps you don't like leaving anything behind you unchecked, like a certain mercenary with a massive double-handed axe.
+Now, the code **should** run no matter what (although I can't say I tested it very thouroughly), which is useful if you want to use it in a theme.
